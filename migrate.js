@@ -3,8 +3,8 @@ const path = require('path');
 
 const zettlrDir = '/Users/gleb/local-important/Zettlr';
 
-function buildZettelMap(files) {
-  const zettelMap = {};
+function buildZettlrMap(files) {
+  const zettlrMap = {};
   for (const file of files) {
     if (!file.endsWith('.md')) continue;
     let match =
@@ -13,21 +13,22 @@ function buildZettelMap(files) {
       file.match(/^(.+)\s\[\[(20\d{14})\]\]\.md$/);
     if (match) {
       const [_, title, id] = match;
-      zettelMap[id] = title.trim();
+      zettlrMap[id] = title.trim();
     }
   }
-  return zettelMap;
+  return zettlrMap;
 }
 
-function replaceIdLinks(files, zettelMap) {
+function replaceIdLinks(files, zettlrMap) {
   for (const file of files) {
     if (!file.endsWith('.md')) continue;
     const filePath = path.join(zettlrDir, file);
     let content = fs.readFileSync(filePath, 'utf8');
     let missingLinks = [];
 
+    // Step 1: Replace only [[ID]] with [[title]]
     let modified = content.replace(/\[\[(\d{14})\]\]/g, (match, id) => {
-      let title = zettelMap[id];
+      let title = zettlrMap[id];
       if (!title) {
         const found = files.find(f =>
           f.endsWith('.md') &&
@@ -38,6 +39,7 @@ function replaceIdLinks(files, zettelMap) {
         }
       }
       if (!title) {
+        // If no title found, keep the original link to avoid losing the link
         missingLinks.push(id);
         return match;
       }
@@ -45,14 +47,14 @@ function replaceIdLinks(files, zettelMap) {
     });
 
     modified = modified.replace(/\[\[(.+?)(?:\s)?(20\d{14})\]\]/g, (match, title, id) => {
-      if (zettelMap[id] && zettelMap[id] === title.trim()) {
+      if (zettlrMap[id] && zettlrMap[id] === title.trim()) {
         return `[[${title.trim()}]]`;
       }
       return match;
     });
 
     modified = modified.replace(/\[\[(\d{14})\]\]\s+([^\n\]]+)/g, (match, id, titleAfter) => {
-      const title = zettelMap[id];
+      const title = zettlrMap[id];
       if (title && title === titleAfter.trim()) {
         return `[[${title}]]`;
       }
@@ -63,12 +65,43 @@ function replaceIdLinks(files, zettelMap) {
       return `[[${title.trim()}]]`;
     });
 
-    Object.values(zettelMap).forEach(title => {
-      const dupRegex = new RegExp(`\\[\\[${title.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\]\\](\\s+)${title}(?=\\b)`, 'g');
+    // Step 2: Remove duplicate title after link (e.g., [[title]] title -> [[title]])
+    // Remove duplicate even if followed by punctuation or end of line
+    Object.values(zettlrMap).forEach(title => {
+      const safeTitle = title.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Remove duplicate after [[title]] even if followed by punctuation or end of line
+      const dupRegex = new RegExp(`\\[\\[${safeTitle}\\]\\](\\s+)${safeTitle}(?=[\\s.,;:!?\\-\\)\\]\\}]*|$)`, 'g');
       modified = modified.replace(dupRegex, `[[${title}]]`);
     });
 
+    // Extra: Remove duplicate after [[title]] for any file that matches "title ID.md"
+    Object.entries(zettlrMap).forEach(([id, title]) => {
+      const safeTitle = title.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Remove duplicate after [[title]] even if followed by punctuation or end of line
+      const regex = new RegExp(`\\[\\[${safeTitle}\\]\\](\\s+)${safeTitle}(?=[\\s.,;:!?\\-\\)\\]\\}]*|$)`, 'g');
+      modified = modified.replace(regex, `[[${title}]]`);
+    });
+
+    // Extra: Remove duplicate after [[title]] for any file, even if not in zettelMap (for renamed files)
+    // This is a fallback for cases where the title is not in zettelMap but the pattern still appears
+    modified = modified.replace(/\[\[([^\]]+)\]\]\s+\1(?=[\s.,;:!?()\[\]{}-]*|$)/g, '[[$1]]');
+
+    // Remove trailing duplicate after [[title]] if file with "title ID.md" exists
+    Object.entries(zettlrMap).forEach(([id, title]) => {
+      const fileWithId = files.find(f =>
+        f.endsWith('.md') &&
+        f.replace(/\.md$/, '') === `${title} ${id}`
+      );
+      if (fileWithId) {
+        // Remove " [[title]] title" or " [[title]] title" (with possible punctuation after)
+        const safeTitle = title.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(`\\[\\[${safeTitle}\\]\\](\\s+)${safeTitle}(?=[^\\w]|$)`, 'g');
+        modified = modified.replace(regex, `[[${title}]]`);
+      }
+    });
+
     if (missingLinks.length > 0) {
+      // Warn, but do not remove or alter the original link
       console.warn(`⚠️  Missing links in ${file}: ${missingLinks.join(', ')}`);
     }
 
@@ -180,7 +213,7 @@ function renameFiles(files) {
 
 // --- MAIN EXECUTION ---
 const files = fs.readdirSync(zettlrDir);
-const zettelMap = buildZettelMap(files);
-replaceIdLinks(files, zettelMap);
+const zettlrMap = buildZettlrMap(files);
+replaceIdLinks(files, zettlrMap);
 chainJournalDiaryLinks(files);
 renameFiles(files);
