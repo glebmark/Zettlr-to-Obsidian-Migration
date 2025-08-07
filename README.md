@@ -10,6 +10,10 @@ A Node.js script to migrate your Zettlr markdown notes to Obsidian, with special
   Renames files to remove Zettelkasten IDs and trailing spaces.
 - **Journal/Diary Chain Links:**  
   Automatically adds previous/next navigation links between journal/diary files, sorted by Zettelkasten ID, allowing to chain journals and diaries into single non-interrupted chain. Order of chaining based on date of file creation represented as ID in filename.
+- **Duplicate Link Text Cleanup:**  
+  Removes duplicate title text after a link (e.g., `[[title]] title` → `[[title]]`), even if followed by punctuation.
+- **Safe Link Handling:**  
+  If a link cannot be resolved, the original link is preserved — no links are lost.
 - **Robust Regex Handling:**  
   Handles various filename and link patterns, including those with or without spaces, brackets, or special characters.
 
@@ -63,11 +67,13 @@ npm install
 - `journal 2020 September 20200914220000.md`
 - `personal health 20201119092503.md`
 - Links like `[[20201119092503]]` or `[[personal health 20201119092503]]`
+- Links with duplicates like `[[regular phrases (examples)]] regular phrases (examples)`
 
 **After:**
 - `journal 2020 September.md` (with navigation links at the top)
 - `personal health.md`
 - Links like `[[personal health]]`
+- Links with duplicates like `[[regular phrases (examples)]]`
 
 ## Customization
 
