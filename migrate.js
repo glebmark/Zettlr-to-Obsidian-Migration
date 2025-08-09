@@ -26,12 +26,17 @@ function replaceIdLinks(files, zettlrMap) {
     let content = fs.readFileSync(filePath, 'utf8');
     let missingLinks = [];
 
-    // Update links to .png files to point to ./assets/ for any .png filename
+    // Update links to .png files to point to relative assets/ for any .png filename
     content = content.replace(
       /(\!\[[^\]]*\]\()([^\s)]+\.png)(\))/gi,
       (match, prefix, filename, suffix) => {
-        if (filename.startsWith('./assets/') || filename.startsWith('assets/')) return match;
-        return `${prefix}./assets/${filename}${suffix}`;
+        // Use relative path: assets/filename.png (no leading ./)
+        if (filename.startsWith('assets/') || filename.startsWith('./assets/')) {
+          // Normalize to assets/ (remove leading ./ if present)
+          filename = filename.replace(/^\.\//, '');
+          return `${prefix}${filename}${suffix}`;
+        }
+        return `${prefix}../assets/${filename}${suffix}`;
       }
     );
 
