@@ -14,6 +14,8 @@ A Node.js script to migrate your Zettlr markdown notes to Obsidian, with special
   Removes duplicate title text after a link (e.g., `[[title]] title` → `[[title]]`), even if followed by punctuation.
 - **Safe Link Handling:**  
   If a link cannot be resolved, the original link is preserved — no links are lost.
+- **Asset Organization:**  
+  Moves all `.png` files from the root of your notes directory into an `assets` folder for better organization.
 - **Robust Regex Handling:**  
   Handles various filename and link patterns, including those with or without spaces, brackets, or special characters.
 
@@ -60,18 +62,21 @@ npm install
    - Links like `[[20201119092503]]`, `[[title 20201119092503]]`, `[[title20201119092503]]`, and `[[ID]] title` are converted to `[[title]]`.
    - Files are renamed to remove Zettelkasten IDs.
    - Journal/diary files (with "journal" or "diary" as a whole word in the filename) are chained with previous/next links at the top of each file.
+   - **All `.png` files in the root directory are moved into an `assets` folder.**
 
 ## Example
 
 **Before:**
 - `journal 2020 September 20200914220000.md`
 - `personal health 20201119092503.md`
+- `ab986b9f82d0be46b57e517d511dbfb8.png` (in root)
 - Links like `[[20201119092503]]` or `[[personal health 20201119092503]]`
 - Links with duplicates like `[[regular phrases (examples)]] regular phrases (examples)`
 
 **After:**
 - `journal 2020 September.md` (with navigation links at the top)
 - `personal health.md`
+- `assets/ab986b9f82d0be46b57e517d511dbfb8.png`
 - Links like `[[personal health]]`
 - Links with duplicates like `[[regular phrases (examples)]]`
 

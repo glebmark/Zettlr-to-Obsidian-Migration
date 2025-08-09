@@ -26,6 +26,15 @@ function replaceIdLinks(files, zettlrMap) {
     let content = fs.readFileSync(filePath, 'utf8');
     let missingLinks = [];
 
+    // Update links to .png files to point to ./assets/ for any .png filename
+    content = content.replace(
+      /(\!\[[^\]]*\]\()([^\s)]+\.png)(\))/gi,
+      (match, prefix, filename, suffix) => {
+        if (filename.startsWith('./assets/') || filename.startsWith('assets/')) return match;
+        return `${prefix}./assets/${filename}${suffix}`;
+      }
+    );
+
     // Step 1: Replace only [[ID]] with [[title]]
     let modified = content.replace(/\[\[(\d{14})\]\]/g, (match, id) => {
       let title = zettlrMap[id];
@@ -211,9 +220,31 @@ function renameFiles(files) {
   console.log(`🔄 Renaming complete. Files renamed: ${renamedCount}, matched: ${renameMatched}, skipped: ${renameSkipped}`);
 }
 
+function moveAssetsToFolder(dir) {
+  const assetsDir = path.join(dir, 'assets');
+  if (!fs.existsSync(assetsDir)) {
+    fs.mkdirSync(assetsDir);
+    console.log('📁 Created assets folder');
+  }
+  const files = fs.readdirSync(dir);
+  let moved = 0;
+  files.forEach(file => {
+    // Move all .png files (any name/length)
+    if (file.toLowerCase().endsWith('.png')) {
+      const oldPath = path.join(dir, file);
+      const newPath = path.join(assetsDir, file);
+      fs.renameSync(oldPath, newPath);
+      moved++;
+      console.log(`📦 Moved asset: ${file} → assets/${file}`);
+    }
+  });
+  console.log(`✅ Moved ${moved} assets to assets folder.`);
+}
+
 // --- MAIN EXECUTION ---
 const files = fs.readdirSync(zettlrDir);
-const zettlrMap = buildZettlrMap(files);
-replaceIdLinks(files, zettlrMap);
+const zettelMap = buildZettlrMap(files);
+replaceIdLinks(files, zettelMap);
 chainJournalDiaryLinks(files);
 renameFiles(files);
+moveAssetsToFolder(zettlrDir);
