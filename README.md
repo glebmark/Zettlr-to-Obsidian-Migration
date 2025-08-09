@@ -16,6 +16,8 @@ A Node.js script to migrate your Zettlr markdown notes to Obsidian, with special
   If a link cannot be resolved, the original link is preserved — no links are lost.
 - **Asset Organization:**  
   Moves all `.png` files from the root of your notes directory into an `assets` folder for better organization.
+- **YAML Metadata Insertion:**  
+  Inserts a YAML metadata block at the top of each note with `created` field. Date is extracted from the Zettelkasten ID.
 - **Robust Regex Handling:**  
   Handles various filename and link patterns, including those with or without spaces, brackets, or special characters.
 
@@ -63,6 +65,7 @@ npm install
    - Files are renamed to remove Zettelkasten IDs.
    - Journal/diary files (with "journal" or "diary" as a whole word in the filename) are chained with previous/next links at the top of each file.
    - **All `.png` files in the root directory are moved into an `assets` folder.**
+   - A YAML metadata block is inserted at the top of each note, with field for `created`.
 
 ## Example
 
@@ -79,6 +82,12 @@ npm install
 - `assets/ab986b9f82d0be46b57e517d511dbfb8.png`
 - Links like `[[personal health]]`
 - Links with duplicates like `[[regular phrases (examples)]]`
+- Each note starts with a YAML block like:
+  ```
+  ---
+  created: 2020-11-19
+  ---
+  ```
 
 ## Customization
 

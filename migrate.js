@@ -114,6 +114,9 @@ function replaceIdLinks(files, zettlrMap) {
       console.warn(`⚠️  Missing links in ${file}: ${missingLinks.join(', ')}`);
     }
 
+    // --- Insert YAML metadata at beginning ---
+    // modified = insertYamlMetadata(file, modified);
+
     fs.writeFileSync(filePath, modified, 'utf8');
     console.log(`✅ Processed: ${file}`);
   }
@@ -235,10 +238,26 @@ function moveAssetsToFolder(dir) {
       const newPath = path.join(assetsDir, file);
       fs.renameSync(oldPath, newPath);
       moved++;
-      console.log(`📦 Moved asset: ${file} → assets/${file}`);
+      // console.log(`📦 Moved asset: ${file} → assets/${file}`);
     }
   });
   console.log(`✅ Moved ${moved} assets to assets folder.`);
+}
+
+function insertYamlMetadata(file, modified) {
+  const idMatch = file.match(/(20\d{12,14})/);
+    if (idMatch) {
+      const id = idMatch[1];
+      const dateStr = id.slice(0, 8); // YYYYMMDD
+      const year = dateStr.slice(0, 4);
+      const month = dateStr.slice(4, 6);
+      const day = dateStr.slice(6, 8);
+      const created = `${year}-${month}-${day}`;
+      const yamlBlock = `---\ncreated: ${created}\n---\n`;
+      // Insert YAML at the very beginning of the file
+      return yamlBlock + modified;
+    }
+  return modified;
 }
 
 // --- MAIN EXECUTION ---
